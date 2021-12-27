@@ -14,3 +14,5 @@ Steps to compile and run CHESS game on your ubuntu system:
 4. Write "./client" in the terminal and the game will run.
 
 NOTE: While playing game, you need to select the piece with RIGHT-MOUSE-KEY, and select the position on which you want to move that piece with LEFT-MOUSE-KEY.
+
+P.S Errors might stil happen (especially segmentation faults).

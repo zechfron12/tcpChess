@@ -12,3 +12,5 @@ Steps to get the server running on your ubuntu system:
    "g++ -std=c++14 server.cpp -o server -ljson-c"
 
 4. Write "./server" in the terminal and the server is set for a game of chess.
+
+P.S Errors might stil happen (especially segmentation faults).
