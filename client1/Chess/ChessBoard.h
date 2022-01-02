@@ -118,6 +118,10 @@ void ChessBoard::MainFunctions(int u, int playerId)
   int q[64];
   int needUpdate, newTurn, idFromFile;
   static int cap = 0;
+
+  const char* status;
+  int isGameOver;
+
   size_t nPos;
 
   json_object *parsed_json;
@@ -144,6 +148,8 @@ void ChessBoard::MainFunctions(int u, int playerId)
     json_object_object_get_ex(parsed_json, "spritePositions", &jspritePositions);
     json_object_object_get_ex(parsed_json, "playerId", &jplayerId);
     json_object_object_get_ex(parsed_json, "needUpdate", &jneedUpdate);
+    json_object_object_get_ex(parsed_json, "isGameOver", &jisGameOver);
+    json_object_object_get_ex(parsed_json, "status", &jstatus);
 
     idFromFile = json_object_get_int(jplayerId);
     needUpdate = json_object_get_int(jneedUpdate);
@@ -192,23 +198,11 @@ void ChessBoard::MainFunctions(int u, int playerId)
 
         if (event.type == sf::Event::Closed)
         {
-          save s;
+          save s(0);
           window.close();
           if (s.smain())
           {
-            // ofstream out, out2, out3;
-            // out.open("spritepositions.txt");
-            // out2.open("boardpositions.txt");
-            // out3.open("qpositions.txt");
-            // for (int i = 0; i < 64; i++)
-            // {
-            //   out << spritepositions[i] << ",";
-            //   out2 << board[i] << ",";
-            //   out3 << q[i] << ",";
-            // }
-            // out.close();
-            // out2.close();
-            // out3.close();
+
           }
         }
         if (u != 0)
@@ -265,19 +259,6 @@ void ChessBoard::MainFunctions(int u, int playerId)
                     turn++;
                     needUpdate = 1;
 
-                    // ofstream out, out2, out3;
-                    // out.open("spritepositions.txt");
-                    // out2.open("boardpositions.txt");
-                    // out3.open("qpositions.txt");
-                    // for (int i = 0; i < 64; i++)
-                    // {
-                    //   out << spritepositions[i] << ",";
-                    //   out2 << board[i] << ",";
-                    //   out3 << q[i] << ",";
-                    // }
-                    // out.close();
-                    // out2.close();
-                    // out3.close();
 
                     cc = q[j] = spritepositions[j];
                     if (j != n)
@@ -289,23 +270,10 @@ void ChessBoard::MainFunctions(int u, int playerId)
                       spritepositions[n] = 64;
                       if (board[j] == -5 || board[j] == 5)
                       {
-                        save s;
+                        save s(1);
                         window.close();
                         if (s.smain())
                         {
-                          // ofstream out, out2, out3;
-                          // out.open("spritepositions.txt");
-                          // out2.open("boardpositions.txt");
-                          // out3.open("qpositions.txt");
-                          // for (int i = 0; i < 64; i++)
-                          // {
-                          //   out << spritepositions[i] << ",";
-                          //   out2 << board[i] << ",";
-                          //   out3 << q[i] << ",";
-                          // }
-                          // out.close();
-                          // out2.close();
-                          // out3.close();
                         }
                       }
                       if (j <= 63 && j >= 56 && board[n] == -6)
