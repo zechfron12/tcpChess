@@ -1,16 +1,17 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include "utilityBox.h"
-#include "save.h"
+#include "theEnd.h"
 #include <fstream>
 #include <string.h>
 #include <json-c/json.h>
 using namespace sf;
 using namespace std;
 
-sf::Color greenish(116,151,84);
-sf::Color paleWhite(238,238,210);
-sf::Color redish(215,72,64);
+sf::Color greenish(116, 151, 84);
+sf::Color paleWhite(238, 238, 210);
+sf::Color redish(215, 72, 64);
+sf::Color greyish(128, 128, 128);
 
 int spritepositions[64] = {
     0, 1, 2, 3, 4, 5, 6, 7,
@@ -39,7 +40,7 @@ private:
 
 public:
   void loadtextures(Texture texture[64]);
-  void loadboard(Texture texture[64], RectangleShape rectangle[64], Sprite sprite[64]);
+  void loadboard(Texture texture[64], RectangleShape rectangle[64], Sprite sprite[64], sf::Color color);
   void MainFunctions(int u, int playerId);
 };
 
@@ -73,7 +74,7 @@ void ChessBoard::loadtextures(Texture texture[64])
       texture[i].loadFromFile("Chess/images/whitePawn.png");
   }
 }
-void ChessBoard::loadboard(Texture texture[64], RectangleShape rectangle[64], Sprite sprite[64])
+void ChessBoard::loadboard(Texture texture[64], RectangleShape rectangle[64], Sprite sprite[64], sf::Color color)
 {
   for (int j = 0; j < 64; j++)
   {
@@ -94,7 +95,7 @@ void ChessBoard::loadboard(Texture texture[64], RectangleShape rectangle[64], Sp
       if ((i + j) % 2 == 0)
         rectangle[counter].setFillColor(paleWhite);
       else
-        rectangle[counter].setFillColor(greenish);
+        rectangle[counter].setFillColor(color);
       counter++;
     }
   }
@@ -102,9 +103,10 @@ void ChessBoard::loadboard(Texture texture[64], RectangleShape rectangle[64], Sp
 void ChessBoard::MainFunctions(int u, int playerId)
 {
   const char *title;
-  if(playerId % 2 == 1)
-  title =  "You represent white pieces!";
-  else title =  "You represent black pieces!";
+  if (playerId % 2 == 1)
+    title = "You represent white pieces!";
+  else
+    title = "You represent black pieces!";
 
   sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGTH), title);
   Identity box;
@@ -118,6 +120,10 @@ void ChessBoard::MainFunctions(int u, int playerId)
   int q[64];
   int needUpdate, newTurn, idFromFile;
   static int cap = 0;
+
+  int status = 1;
+  int isGameOver = 0;
+
   size_t nPos;
 
   json_object *parsed_json;
@@ -144,9 +150,27 @@ void ChessBoard::MainFunctions(int u, int playerId)
     json_object_object_get_ex(parsed_json, "spritePositions", &jspritePositions);
     json_object_object_get_ex(parsed_json, "playerId", &jplayerId);
     json_object_object_get_ex(parsed_json, "needUpdate", &jneedUpdate);
+    json_object_object_get_ex(parsed_json, "isGameOver", &jisGameOver);
+    json_object_object_get_ex(parsed_json, "status", &jstatus);
 
     idFromFile = json_object_get_int(jplayerId);
     needUpdate = json_object_get_int(jneedUpdate);
+    status = json_object_get_int(jstatus);
+    isGameOver = json_object_get_int(jisGameOver);
+
+    if (status == 0)
+    { // The othe player disconnected from the game
+      TheEnd s(2);
+      window.close();
+      s.smain();
+    }
+
+    if (isGameOver == 1)
+    { // You lost the game
+      TheEnd s(3);
+      window.close();
+      s.smain();
+    }
 
     if (idFromFile != playerId && needUpdate == 1)
     {
@@ -177,179 +201,31 @@ void ChessBoard::MainFunctions(int u, int playerId)
       json_object_to_file("send.json", parsed_json);
     }
 
-      sf::RectangleShape rectangle[64];
-      sf::Texture texture[65];
-      sf::Sprite sprite[65];
-      loadtextures(texture);
-      loadboard(texture, rectangle, sprite);
+    sf::RectangleShape rectangle[64];
+    sf::Texture texture[65];
+    sf::Sprite sprite[65];
+    loadtextures(texture);
+    if (turn % 2 == playerId % 2)
+      loadboard(texture, rectangle, sprite, greenish);
+    else
+      loadboard(texture, rectangle, sprite, greyish);
 
-      for (int j = 0; j < 64; ++j)
-        q[j] = 64;
-      Vector2i pos = Mouse::getPosition(window);
-      sf::Event event;
-      while (window.pollEvent(event))
+    for (int j = 0; j < 64; ++j)
+      q[j] = 64;
+    Vector2i pos = Mouse::getPosition(window);
+    sf::Event event;
+    while (window.pollEvent(event))
+    {
+
+      if (event.type == sf::Event::Closed)
       {
-
-        if (event.type == sf::Event::Closed)
-        {
-          save s;
-          window.close();
-          if (s.smain())
-          {
-            // ofstream out, out2, out3;
-            // out.open("spritepositions.txt");
-            // out2.open("boardpositions.txt");
-            // out3.open("qpositions.txt");
-            // for (int i = 0; i < 64; i++)
-            // {
-            //   out << spritepositions[i] << ",";
-            //   out2 << board[i] << ",";
-            //   out3 << q[i] << ",";
-            // }
-            // out.close();
-            // out2.close();
-            // out3.close();
-          }
-        }
-        if (u != 0)
-        {
-          if (sf::Mouse::isButtonPressed(sf::Mouse::Right))
-          {
-            for (int j = 0; j < 64; ++j)
-            {
-              if (turn % 2 == 0 && board[j] < 0)
-              {
-                if (rectangle[j].getGlobalBounds().contains(pos.x, pos.y))
-                {
-                  n = j;
-                  firstpos = rectangle[j].getPosition();
-                  v = spritepositions[j];
-                  rectangle[n].setFillColor(redish);
-                  if (spritepositions[n] != 64)
-
-                    cap++;
-                }
-              }
-            }
-            for (int j = 0; j < 64; ++j)
-            {
-              if (turn % 2 != 0 && board[j] > 0)
-              {
-                if (rectangle[j].getGlobalBounds().contains(pos.x, pos.y))
-                {
-                  n = j;
-                  firstpos = rectangle[j].getPosition();
-                  v = spritepositions[j];
-                  rectangle[n].setFillColor(redish);
-                  if (spritepositions[n] != 64)
-                    cap++;
-                }
-              }
-            }
-          }
-          if (cap != 0)
-            if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
-            {
-              for (int j = 0; j < 64; ++j)
-              {
-                // cout<<box.identifier(n,j,board[j],board)<<"=identity"<<endl;
-                if (rectangle[j].getGlobalBounds().contains(pos.x, pos.y))
-                {
-                  // if(n==8 && j==16 && board[n]==-6){
-                  isMove = box.identifier(n, j, board[n], board); //<<"=identity"<<endl;
-                  secondpos = rectangle[j].getPosition();
-                  int spritepos = spritepositions[n];
-                  // cout<<"shaheer"<<endl;
-                  if (isMove && turn % 2 == playerId % 2)
-                  {
-                    turn++;
-                    needUpdate = 1;
-
-                    // ofstream out, out2, out3;
-                    // out.open("spritepositions.txt");
-                    // out2.open("boardpositions.txt");
-                    // out3.open("qpositions.txt");
-                    // for (int i = 0; i < 64; i++)
-                    // {
-                    //   out << spritepositions[i] << ",";
-                    //   out2 << board[i] << ",";
-                    //   out3 << q[i] << ",";
-                    // }
-                    // out.close();
-                    // out2.close();
-                    // out3.close();
-
-                    cc = q[j] = spritepositions[j];
-                    if (j != n)
-                    {
-                      sprite[spritepos].setPosition(secondpos);
-                      sprite[cc].setPosition(100000000, 100000000);
-                      int suppos = spritepositions[j];
-                      spritepositions[j] = spritepositions[n];
-                      spritepositions[n] = 64;
-                      if (board[j] == -5 || board[j] == 5)
-                      {
-                        save s;
-                        window.close();
-                        if (s.smain())
-                        {
-                          // ofstream out, out2, out3;
-                          // out.open("spritepositions.txt");
-                          // out2.open("boardpositions.txt");
-                          // out3.open("qpositions.txt");
-                          // for (int i = 0; i < 64; i++)
-                          // {
-                          //   out << spritepositions[i] << ",";
-                          //   out2 << board[i] << ",";
-                          //   out3 << q[i] << ",";
-                          // }
-                          // out.close();
-                          // out2.close();
-                          // out3.close();
-                        }
-                      }
-                      if (j <= 63 && j >= 56 && board[n] == -6)
-                      {
-                        board[j] = -4;
-                      }
-                      else if (j >= 0 && j <= 7 && board[n] == 6)
-                      {
-                        board[j] = 4;
-                      }
-                      else
-                      {
-                        board[j] = board[n];
-                        board[n] = 0;
-                      }
-                      n = j;
-                    }
-                  }
-                  int counter = 0;
-                  for (int i = 0; i < 8; ++i)
-                  {
-                    for (int j = 0; j < 8; ++j)
-                    {
-                      if ((i + j) % 2 == 0)
-                        rectangle[counter].setFillColor(paleWhite);
-                      else
-                        rectangle[counter].setFillColor(greenish);
-                      counter++;
-                    }
-                  }
-                }
-              }
-              cap = 0;
-            }
-        }
-      }
-
-      if (needUpdate == 1)
-      {
+        needUpdate = 1;
+        status = 0;
 
         parsing_json = json_object_new_object();
 
         /*Creating a json string*/
-        jstatus = json_object_new_string("connected");
+        jstatus = json_object_new_int(status);
 
         /*Creating a json integer*/
         jturn = json_object_new_int(turn);
@@ -357,7 +233,7 @@ void ChessBoard::MainFunctions(int u, int playerId)
 
         /*Creating a json boolean*/
         jneedUpdate = json_object_new_int(needUpdate);
-        jisGameOver = json_object_new_int(0);
+        jisGameOver = json_object_new_int(isGameOver);
 
         /*Creating a json array*/
         jboard = json_object_new_array();
@@ -386,19 +262,213 @@ void ChessBoard::MainFunctions(int u, int playerId)
         /* Now printing the json object in the file */
         json_object_to_file("send.json", parsing_json);
         json_object_to_file("recv.json", parsing_json);
-
-        needUpdate = 0;
+        TheEnd s(0);
+        window.close();
+        s.smain();
       }
-
-      window.clear();
-      for (int j = 0; j < 64; ++j)
-        window.draw(rectangle[j]);
-      for (int j = 0; j < 65; j++)
+      if (u != 0)
       {
-        if (q[j] == 64)
-          window.draw(sprite[j]);
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Right))
+        {
+          for (int j = 0; j < 64; ++j)
+          {
+            if (turn % 2 == 0 && board[j] < 0)
+            {
+              if (rectangle[j].getGlobalBounds().contains(pos.x, pos.y))
+              {
+                n = j;
+                firstpos = rectangle[j].getPosition();
+                v = spritepositions[j];
+                rectangle[n].setFillColor(redish);
+                if (spritepositions[n] != 64)
+
+                  cap++;
+              }
+            }
+          }
+          for (int j = 0; j < 64; ++j)
+          {
+            if (turn % 2 != 0 && board[j] > 0)
+            {
+              if (rectangle[j].getGlobalBounds().contains(pos.x, pos.y))
+              {
+                n = j;
+                firstpos = rectangle[j].getPosition();
+                v = spritepositions[j];
+                rectangle[n].setFillColor(redish);
+                if (spritepositions[n] != 64)
+                  cap++;
+              }
+            }
+          }
+        }
+        if (cap != 0)
+          if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+          {
+            for (int j = 0; j < 64; ++j)
+            {
+              // cout<<box.identifier(n,j,board[j],board)<<"=identity"<<endl;
+              if (rectangle[j].getGlobalBounds().contains(pos.x, pos.y))
+              {
+                // if(n==8 && j==16 && board[n]==-6){
+                isMove = box.identifier(n, j, board[n], board); //<<"=identity"<<endl;
+                secondpos = rectangle[j].getPosition();
+                int spritepos = spritepositions[n];
+                // cout<<"shaheer"<<endl;
+                if (isMove && turn % 2 == playerId % 2)
+                {
+                  turn++;
+                  needUpdate = 1;
+
+                  cc = q[j] = spritepositions[j];
+                  if (j != n)
+                  {
+                    sprite[spritepos].setPosition(secondpos);
+                    sprite[cc].setPosition(100000000, 100000000);
+                    int suppos = spritepositions[j];
+                    spritepositions[j] = spritepositions[n];
+                    spritepositions[n] = 64;
+                    if (board[j] == -5 || board[j] == 5)
+                    {
+
+                      needUpdate = 1;
+                      isGameOver = 1;
+                      parsing_json = json_object_new_object();
+
+                      /*Creating a json string*/
+                      jstatus = json_object_new_int(status);
+
+                      /*Creating a json integer*/
+                      jturn = json_object_new_int(turn);
+                      jplayerId = json_object_new_int(playerId);
+
+                      /*Creating a json boolean*/
+                      jneedUpdate = json_object_new_int(needUpdate);
+                      jisGameOver = json_object_new_int(isGameOver);
+
+                      /*Creating a json array*/
+                      jboard = json_object_new_array();
+                      jspritePositions = json_object_new_array();
+
+                      /*Creating json strings*/
+                      for (int i = 0; i < 64; i++)
+                      {
+                        jpos = json_object_new_int(board[i]);
+                        json_object_array_add(jboard, jpos);
+
+                        jpos = json_object_new_int(spritepositions[i]);
+                        json_object_array_add(jspritePositions, jpos);
+                      }
+
+                      /*Form the json object*/
+                      /*Each of these is like a key value pair*/
+                      json_object_object_add(parsing_json, "turn", jturn);
+                      json_object_object_add(parsing_json, "playerId", jplayerId);
+                      json_object_object_add(parsing_json, "board", jboard);
+                      json_object_object_add(parsing_json, "spritePositions", jspritePositions);
+                      json_object_object_add(parsing_json, "status", jstatus);
+                      json_object_object_add(parsing_json, "needUpdate", jneedUpdate);
+                      json_object_object_add(parsing_json, "isGameOver", jisGameOver);
+
+                      /* Now printing the json object in the file */
+                      json_object_to_file("send.json", parsing_json);
+                      json_object_to_file("recv.json", parsing_json);
+
+                      TheEnd s(1);
+                      window.close();
+                      s.smain();
+                    }
+                    if (j <= 63 && j >= 56 && board[n] == -6)
+                    {
+                      board[j] = -4;
+                    }
+                    else if (j >= 0 && j <= 7 && board[n] == 6)
+                    {
+                      board[j] = 4;
+                    }
+                    else
+                    {
+                      board[j] = board[n];
+                      board[n] = 0;
+                    }
+                    n = j;
+                  }
+                }
+                int counter = 0;
+                for (int i = 0; i < 8; ++i)
+                {
+                  for (int j = 0; j < 8; ++j)
+                  {
+                    if ((i + j) % 2 == 0)
+                      rectangle[counter].setFillColor(paleWhite);
+                    else
+                      rectangle[counter].setFillColor(greyish);
+                    counter++;
+                  }
+                }
+              }
+            }
+            cap = 0;
+          }
+      }
+    }
+
+    if (needUpdate == 1)
+    {
+
+      parsing_json = json_object_new_object();
+
+      /*Creating a json string*/
+      jstatus = json_object_new_int(status);
+
+      /*Creating a json integer*/
+      jturn = json_object_new_int(turn);
+      jplayerId = json_object_new_int(playerId);
+
+      /*Creating a json boolean*/
+      jneedUpdate = json_object_new_int(needUpdate);
+      jisGameOver = json_object_new_int(isGameOver);
+
+      /*Creating a json array*/
+      jboard = json_object_new_array();
+      jspritePositions = json_object_new_array();
+
+      /*Creating json strings*/
+      for (int i = 0; i < 64; i++)
+      {
+        jpos = json_object_new_int(board[i]);
+        json_object_array_add(jboard, jpos);
+
+        jpos = json_object_new_int(spritepositions[i]);
+        json_object_array_add(jspritePositions, jpos);
       }
 
-      window.display();
+      /*Form the json object*/
+      /*Each of these is like a key value pair*/
+      json_object_object_add(parsing_json, "turn", jturn);
+      json_object_object_add(parsing_json, "playerId", jplayerId);
+      json_object_object_add(parsing_json, "board", jboard);
+      json_object_object_add(parsing_json, "spritePositions", jspritePositions);
+      json_object_object_add(parsing_json, "status", jstatus);
+      json_object_object_add(parsing_json, "needUpdate", jneedUpdate);
+      json_object_object_add(parsing_json, "isGameOver", jisGameOver);
+
+      /* Now printing the json object in the file */
+      json_object_to_file("send.json", parsing_json);
+      json_object_to_file("recv.json", parsing_json);
+
+      needUpdate = 0;
     }
+
+    window.clear();
+    for (int j = 0; j < 64; ++j)
+      window.draw(rectangle[j]);
+    for (int j = 0; j < 65; j++)
+    {
+      if (q[j] == 64)
+        window.draw(sprite[j]);
+    }
+
+    window.display();
   }
+}

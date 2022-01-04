@@ -76,6 +76,7 @@ int main(int argc, char *argv[])
  json_object *jturn;
  json_object *jplayerId;
  json_object *jneedUpdate;
+
  int turn;
  int playerId;
  int it = 0;
@@ -85,7 +86,7 @@ int main(int argc, char *argv[])
   while (1)
   {
    if (it == 0)
-   {
+   {//Wait for the game to configure
     sleep(2);
     it++;
    }
@@ -96,25 +97,15 @@ int main(int argc, char *argv[])
    jplayerId = json_object_from_file("id.json");
    playerId = json_object_get_int(jplayerId);
 
-   // printf("Your id is  : %d\n", playerId);
-
-   // if (turn % 2 == 0)
-   // {
-   // Received the data from the server
-
    read_size = SocketReceive(hSocket, server_reply, SIZE);
-   // printf("Server Response : %s\n\n", server_reply);
+  
    writeToFile(server_reply, "recv.json");
    bzero(server_reply, SIZE);
 
-   // printf("The turn is : %d\n", turn);
-   // printf("Enter the Message: ");
-   // scanf("%s", SendToServer);
-   // Send data to the server
    writeFromFile(SendToServer, "send.json");
    SocketSend(hSocket, SendToServer, strlen(SendToServer));
    bzero(SendToServer, SIZE);
-   // }
+   
    sleep(1);
   }
   close(hSocket);
@@ -133,16 +124,6 @@ int main(int argc, char *argv[])
   parsed_json = json_object_from_file("recv.json");
   json_object_object_get_ex(parsed_json, "playerId", &jplayerId);
   json_object_to_file("id.json", jplayerId);
-
-  jneedUpdate = json_object_new_int(0);
-  json_object_object_add(parsed_json, "needUpdate", jneedUpdate);
-  json_object_to_file("send.json", parsed_json);
-  json_object_to_file("recv.json", parsed_json);
-
-  // printf("The turn is : %d\n", turn);
-  // printf("Enter the Message: ");
-  // scanf("%s", SendToServer);
-  // Send data to the server
 
   jneedUpdate = json_object_new_int(0);
   json_object_object_add(parsed_json, "needUpdate", jneedUpdate);

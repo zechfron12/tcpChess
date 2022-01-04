@@ -39,7 +39,7 @@ void createConfigFile(int id)
 {
   /*Creating a json object*/
   int board[64] = {
-      -1, -2, -3, -4, -5, -3, -2, -1,
+      -1, -1, -3, -4, -5, -3, -2, -1,
       -6, -6, -6, -6, -6, -6, -6, -6,
       0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0,
@@ -49,7 +49,7 @@ void createConfigFile(int id)
       1, 2, 3, 4, 5, 3, 2, 1};
 
   int spritePositions[64] = {
-      0, 1, 2, 3, 4, 5, 6, 7,
+      0, 0, 2, 3, 4, 5, 6, 7,
       8, 9, 10, 11, 12, 13, 14, 15,
       64, 64, 64, 64, 64, 64, 64, 64,
       64, 64, 64, 64, 64, 64, 64, 64,
@@ -70,7 +70,7 @@ void createConfigFile(int id)
   json_object *classicConfig = json_object_new_object();
 
   /*Creating a json string*/
-  json_object *jstatus = json_object_new_string("connected");
+  json_object *jstatus = json_object_new_int(1);
 
   /*Creating a json integer*/
   json_object *jturn = json_object_new_int(1);
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
         }
         bzero(client_message, SIZE);
 
-        sleep(1);
+        sleep(2);
       }
     }
     close(sock);
