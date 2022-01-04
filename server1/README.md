@@ -13,4 +13,6 @@ Steps to get the server running on your ubuntu system:
 
 4. Write "./server" in the terminal and the server is set for a game of chess.
 
-P.S Errors might stil happen (especially segmentation faults).
+P.S
+Errors might stil happen (especially segmentation faults).
+The data sending isn't perfect yet so some of your moves might not register at all in some cases. (Try again)
